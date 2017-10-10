@@ -13,28 +13,25 @@ contract FiatTrust {
    * @dev The Payou Event notifies the network of a payout
    */
   event PayOut(
-    address trust,
-    address token,
+    address indexed token,
     uint256 amount,
-    address owner
+    address indexed owner
   );
 
   /**
    * @dev Liquidation events are called when a trust is liquidated due to lack of custodian activity
    */
   event Liquidation(
-    address trust,
-    address token,
+    address indexed token,
     uint256 amount,
-    address owner
+    address indexed owner
   );
 
   /**
    * @dev FeePaid notifies the network that a fee has been paid
    */
   event FeePaid(
-    address trust,
-    address paidTo,
+    address indexed paidTo,
     uint256 amount
   );
 
@@ -42,8 +39,8 @@ contract FiatTrust {
    * @dev Notifies the network that a redemption request was requested befor the conversion factors were filed.
    */
   event PayoutWarning(
-      address token,
-      bytes32 currency,
+      address indexed token,
+      bytes32 indexed currency,
       uint256 factor,
       uint256 timestamp,
       uint256 tardiness
@@ -52,7 +49,7 @@ contract FiatTrust {
   /**
    * @dev fee factor stores the denominator used to calculate payout fees
    */
-  uint32 public feeFactor = 200; //0.5% is default
+  uint32 public feeFactor = 50; //2% is default
 
   /**
    * @dev stores the denominator used to calculate franchisee payouts
@@ -374,7 +371,7 @@ contract FiatTrust {
 
       payoutAddress.transfer(thisPayout);
       PayFee(fee);
-      PayOut(address(this), ethToken, thisPayout, payoutAddress);
+      PayOut(ethToken, thisPayout, payoutAddress);
     }
     else{
       //this branch process ERC20 based trusts
@@ -391,7 +388,7 @@ contract FiatTrust {
 
       ERC20(token).transfer(payoutAddress, thisPayout);
       PayFee(fee);
-      PayOut(address(this), token, thisPayout, payoutAddress);
+      PayOut(token, thisPayout, payoutAddress);
     }
 
 
@@ -412,13 +409,13 @@ contract FiatTrust {
 
       payout = this.balance;
       _address.transfer(payout);
-      Liquidation(address(this), ethToken, payout, _address);
+      Liquidation(ethToken, payout, _address);
     }
     else{
       payout = ERC20(token).balanceOf(address(this));
 
       ERC20(token).transfer(_address, payout);
-      Liquidation(address(this), token, payout, _address);
+      Liquidation(token, payout, _address);
     }
 
     bActive = false;
@@ -431,13 +428,13 @@ contract FiatTrust {
   function PayFee(uint256 _feeAmount) internal{
     if(custodian == franchisee || franchisee == 0){
       custodian.transfer(_feeAmount);
-      FeePaid(address(this), custodian, _feeAmount);
+      FeePaid(custodian, _feeAmount);
     }
     else{
       custodian.transfer( (_feeAmount / franchiseeFactor).mul(franchiseeFactor - 1 ) );
-      FeePaid(address(this), custodian, (_feeAmount / franchiseeFactor).mul(franchiseeFactor - 1) );
+      FeePaid(custodian, (_feeAmount / franchiseeFactor).mul(franchiseeFactor - 1) );
       franchisee.transfer(_feeAmount / franchiseeFactor);
-      FeePaid(address(this), custodian, _feeAmount / franchiseeFactor);
+      FeePaid( custodian, _feeAmount / franchiseeFactor);
     }
   }
 
@@ -598,11 +595,11 @@ contract FiatTrust {
     FiatTrust oldTrust = FiatTrust(_oldTrust);
     FiatTrustCustodian ftc = FiatTrustCustodian(custodian);
 
+    //authorize upgrade with custodian
     require(ftc.authorizedTrustUpgrade(_oldTrust) == address(this));
 
-    //todo:check authorized upgrade at custodian
     require(owner == oldTrust.owner());  //custodian can only upgrade contracts to same owner
-    require(token == oldTrust.token());  //must use same token -- todo: what about token equivalence and upgraded ERC20 contracts
+    require(token == oldTrust.token());  //must use same token
     require(beneficiary == oldTrust.beneficiary());  //must use same beneficiary
     require(currency == oldTrust.currency());  //must use same currency
     require(fiatPayout == oldTrust.fiatPayout()); //must use same payout

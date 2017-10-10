@@ -12,12 +12,12 @@ contract FiatTrustCustodian {
 
   event TrustCreated(
     address indexed owner,
-    address location
+    address indexed location
   );
 
   event ConversionSet(
-    address token,
-    bytes32 currency,
+    address indexed token,
+    bytes32 indexed currency,
     uint year,
     uint month,
     uint day,
@@ -25,15 +25,15 @@ contract FiatTrustCustodian {
   );
 
   event NewMaxConversion(
-    address token,
-    bytes32 currency,
-    uint256 timestamp
+    address indexed token,
+    bytes32 indexed currency,
+    uint256 indexed timestamp
   );
 
   /**
    * @dev Upon each withdrawl an amount equal to the payout / the fee factor is sent to the custodian.
    */
-  uint32 public feeFactor = 200; //0.5% is default
+  uint32 public feeFactor = 50; //0.5% is default
 
   /**
    * @dev A franchisee can get 10% of the fee if set up
@@ -41,12 +41,12 @@ contract FiatTrustCustodian {
   uint32 public franchiseeFactor = 10; //10% is default
 
   /**
-   * @dev payouts max out at 50 dollars
+   * @dev payouts max
    */
   mapping(bytes32 => uint32) public maxFee;
 
   /**
-   * @dev Trusts cost 25 dollarsto set up
+   * @dev Trusts cost originationFee dollarsto set up
    */
   mapping(bytes32 => uint32) public originationFee;
 
@@ -137,7 +137,6 @@ contract FiatTrustCustodian {
    * @param _owner - the address you want to be the new owner
    */
   function TransferOwnership(address _owner) onlyOwner returns (bool){
-    //todo: consider time lock?isa
     owner = _owner;
     return true;
   }
@@ -162,7 +161,6 @@ contract FiatTrustCustodian {
   function CreateTrust(address _token, bytes32 _currency, uint32 _term, uint256 _fiatPayout) returns(address){
     address newContract = FiatTrustFactory(factory).CreateTrust(msg.sender, _token, _currency, _term, _fiatPayout);
     TrustCreated(msg.sender, newContract);
-    //todo: do we want to store a list of created contracts here?
     return newContract;
   }
 
@@ -415,12 +413,6 @@ contract FiatTrustCustodian {
   function setMaxConversionDate(address _token, bytes32 _currency, uint256 _value) onlyOwnerOrAgent returns(bool){
     return TrustStorage(trustStorage).putValue(0x2, keccak256(_token,_currency), bytes32(_value));
   }
-
-  //function LiquidatePeriod(address _trust, uint32 _date) returns (bool){}
-  //function PushPeriod(address _trust, uint32 _date) returns (bool){}
-
-  //todo: do we want to do liquidation right now?
-  //todo: do we want to allow for free upgrades of trusts?
 
 
 
