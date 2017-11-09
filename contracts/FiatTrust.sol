@@ -433,7 +433,10 @@ contract FiatTrust {
     else{
       custodian.transfer( (_feeAmount / franchiseeFactor).mul(franchiseeFactor - 1 ) );
       FeePaid(custodian, (_feeAmount / franchiseeFactor).mul(franchiseeFactor - 1) );
-      franchisee.transfer(_feeAmount / franchiseeFactor);
+      //use send instead of tranfer to make franchisee responsible for accepting payment
+      //https://github.com/skilesare/catallaxtrust/issues/1
+      // h/t to https://github.com/NickErrant
+      franchisee.send(_feeAmount / franchiseeFactor);
       FeePaid( custodian, _feeAmount / franchiseeFactor);
     }
   }
